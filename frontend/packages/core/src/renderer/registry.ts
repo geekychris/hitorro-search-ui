@@ -15,6 +15,10 @@ export interface TypeRendererProps {
   lang: string
   /** Click callback — the AppShell wires this to open the detail drawer. */
   onOpen?: () => void
+  /** Add-filter callback — cards (or their entity chips) call this to
+   *  drop a `+field:value` into the current search state without
+   *  needing to know how the store is wired. */
+  onFilter?: (field: string, value: string) => void
 }
 
 // Module-scoped registry — populated at app boot via registerTypeRenderer.

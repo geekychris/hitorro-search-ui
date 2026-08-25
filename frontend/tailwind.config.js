@@ -3,6 +3,9 @@
 // Each package extends with its own `content` paths in its own tailwind
 // config so purge scans the right files.
 export default {
+  // darkMode: 'class' — activate by adding `dark` class to <html>. The
+  // useTheme hook in the library toggles this + persists to localStorage.
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {

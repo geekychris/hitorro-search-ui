@@ -106,7 +106,7 @@ public class JvsQueryShaper {
      *       AND in filter constraints.</li>
      * </ul>
      */
-    String composeQueryString(SearchRequest req) {
+    public String composeQueryString(SearchRequest req) {
         String q = req.qOrMatchAll();
         List<String> clauses = new ArrayList<>();
 
@@ -191,20 +191,45 @@ public class JvsQueryShaper {
         );
     }
 
-    /** Fish {@code id.id} out of composite core_id shapes; fall back to
-     *  the raw {@code id} field for scalar-id types. */
+    /**
+     * Best-effort id extraction. Order of attempts:
+     * <ol>
+     *   <li>Scalar {@code id} field — string / number → asText().</li>
+     *   <li>Object {@code id}: try each common inner-key in order
+     *       ({@code id, did, key, uuid}). This covers core_id + most
+     *       composite id shapes we've seen in the wild without requiring
+     *       the type schema at this layer.</li>
+     *   <li>Fallback: JSON-stringify the object so the caller at least
+     *       gets a stable key (better than null for cache seeding, worse
+     *       for KV lookups — the client will typically ignore this).</li>
+     * </ol>
+     *
+     * <p>A schema-driven variant would be more robust for composite
+     * id shapes with non-standard inner field names; the type sidecar
+     * carries the info. Kept simple here so the shaper stays pure —
+     * the {@link com.hitorro.searchui.api.IndexController#schema}
+     * endpoint is the right place to publish "id inner-key" if it
+     * ever matters.</p>
+     */
     private static String extractId(JsonNode doc) {
         JsonNode idNode = doc.get("id");
         if (idNode == null || idNode.isNull()) return null;
+        if (idNode.isValueNode()) return idNode.asText();
         if (idNode.isObject()) {
-            JsonNode inner = idNode.get("id");
-            if (inner != null && !inner.isNull()) return inner.asText();
-            JsonNode did = idNode.get("did");
-            if (did != null && !did.isNull()) return did.asText();
+            for (String key : ID_INNER_KEYS) {
+                JsonNode v = idNode.get(key);
+                if (v != null && !v.isNull() && v.isValueNode()) return v.asText();
+            }
             return idNode.toString();
         }
         return idNode.asText();
     }
+
+    /** Inner keys we probe when the top-level {@code id} is an object.
+     *  Order matters — {@code id} first (core_id's canonical merged
+     *  value), then {@code did} (core_id's original raw id), then
+     *  common alternatives. */
+    private static final String[] ID_INNER_KEYS = { "id", "did", "key", "uuid", "guid" };
 
     /** Pull the summarize-stage aggregate. Structure varies across
      *  fleet-retrieval versions; we look for {@code byId} first, then

@@ -23,7 +23,7 @@ import {
  * Registered in main.tsx via registerTypeRenderer("mail_email", ...)
  * and again for "mail_message" — one card, two type aliases.
  */
-export function MailEmailCard({ hit, lang, query, onOpen }: TypeRendererProps) {
+export function MailEmailCard({ hit, lang, query, onOpen, onFilter }: TypeRendererProps) {
   const doc = hit.doc ?? {}
   const subject = pickMls(doc.title, lang) ?? '(no subject)'
   const bodyText = pickMls(doc.body, lang, 'clean') ?? pickMls(doc.body, lang, 'text')
@@ -56,7 +56,16 @@ export function MailEmailCard({ hit, lang, query, onOpen }: TypeRendererProps) {
         <span className="font-mono">{sender}</span>
         {senderName && <span className="italic">"{senderName}"</span>}
         {domain && (
-          <span className="px-1.5 py-0.5 bg-slate-100 rounded text-[10px]">{domain}</span>
+          onFilter ? (
+            <button
+              type="button"
+              className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 dark:text-slate-200 rounded text-[10px] hover:ring-1 hover:ring-hitorro-primary/40 cursor-pointer"
+              onClick={(e) => { e.stopPropagation(); onFilter('sender_domain', domain) }}
+              title={`Filter to sender_domain:${domain}`}
+            >{domain}</button>
+          ) : (
+            <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 dark:text-slate-200 rounded text-[10px]">{domain}</span>
+          )
         )}
         {doc.read === false && (
           <span className="px-1.5 py-0.5 bg-hitorro-primary/10 text-hitorro-primary rounded text-[10px]">unread</span>
@@ -88,9 +97,19 @@ export function MailEmailCard({ hit, lang, query, onOpen }: TypeRendererProps) {
       {ner.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1">
           {ner.map((e, i) => (
-            <span key={i} className={`px-1.5 py-0.5 text-[11px] rounded ${entityColor(e.type)}`}>
+            <button
+              key={i}
+              type="button"
+              className={`px-1.5 py-0.5 text-[11px] rounded ${entityColor(e.type)} ${onFilter ? 'cursor-pointer hover:ring-1 hover:ring-offset-1' : ''}`}
+              onClick={(ev) => {
+                if (!onFilter) return
+                ev.stopPropagation()
+                onFilter('body.mls.segmented_ner', `NE_${e.type}`)
+              }}
+              title={onFilter ? `Filter to docs mentioning NE_${e.type}` : undefined}
+            >
               {e.term} <span className="opacity-60">· {e.type}</span>
-            </span>
+            </button>
           ))}
         </div>
       )}

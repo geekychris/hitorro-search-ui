@@ -26,7 +26,7 @@ export function SearchBox({ placeholder = 'Search…' }: { placeholder?: string 
     <div className="relative">
       <input
         type="text"
-        className="w-full pl-10 pr-4 py-2.5 text-base border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-hitorro-primary"
+        className="w-full pl-10 pr-4 py-2.5 text-base border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-hitorro-primary"
         placeholder={placeholder}
         value={local}
         onChange={(e) => setLocal(e.target.value)}

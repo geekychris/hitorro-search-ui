@@ -12,19 +12,24 @@ import type { SearchRequest, SearchResponse } from '../types/api'
  */
 export function useSearch() {
   const client = useClient()
-  const { index, mode, lang, q, filters, facets, sort, page, size } = useSearchStore()
+  const { index, extraIndexes, mode, lang, q, filters, facets, sort, page, size } = useSearchStore()
+  // Route through the multi endpoint when the user picked more than
+  // one index; otherwise a single-index call is smaller + carries the
+  // full stage set (fetch/fixup/summarize).
+  const federated = extraIndexes.length > 0
 
   return useQuery<SearchResponse>({
     enabled: !!index,
-    // key includes every field that affects the request so cache hits
-    // work correctly across pagination + filter tweaks.
-    queryKey: ['search', { index, mode, lang, q, filters, facets, sort, page, size }],
+    queryKey: ['search', { index, extras: extraIndexes, mode, lang, q, filters, facets, sort, page, size }],
     queryFn: async () => {
+      if (federated) {
+        return client.searchMultiple({
+          indexes: [index!, ...extraIndexes], q, filters, facets, sort, page, size, mode, lang,
+        })
+      }
       const req: SearchRequest = { index: index!, mode, lang, q, filters, facets, sort, page, size }
       return client.search(req)
     },
-    // Keep previous results visible while the next request is in flight
-    // — critical for facet clicks / pagination so the UI doesn't blank.
     placeholderData: (prev) => prev,
     staleTime: 30_000,
   })

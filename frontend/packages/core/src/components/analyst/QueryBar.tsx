@@ -17,7 +17,7 @@ export function QueryBar() {
     <div className="flex items-center gap-2">
       <input
         type="text"
-        className="flex-1 font-mono text-sm px-3 py-2 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-hitorro-primary"
+        className="flex-1 font-mono text-sm px-3 py-2 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-hitorro-primary"
         placeholder='Lucene syntax — e.g. body.mls.segmented_ner:NE_Person'
         value={local}
         onChange={(e) => setLocal(e.target.value)}

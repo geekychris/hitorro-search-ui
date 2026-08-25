@@ -1,0 +1,98 @@
+# hitorro-search-ui CI — builds the full monorepo on every push +
+# PR, publishes a Docker image to GHCR on any tag matching v*.
+#
+# The build job runs pnpm + maven; the docker job only runs on tag
+# so PRs don't pay the multi-stage image cost.
+name: ci
+
+on:
+  push:
+    branches: [main]
+    tags:     ['v*']
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write   # push image to GHCR
+
+jobs:
+
+  build:
+    name: build + test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # JDK 21 — matches the pinned Temurin base in the Dockerfile.
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: temurin
+          cache: maven
+
+      # pnpm 8.15 — frontend-maven-plugin will download the same version
+      # into target/, but installing it up front lets us cache the store
+      # across runs and cuts several minutes off the frontend install.
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 8.15.4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: pnpm install (frontend)
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: pnpm test (frontend — vitest)
+        working-directory: frontend
+        run: pnpm -r --if-present test
+
+      - name: mvn install (full stack)
+        # `-Dskip.frontend=true` — pnpm has already built the dist above,
+        # via the pnpm-install + we let mvn copy the artifacts. Comment
+        # the flag out to have Maven do the whole build itself.
+        run: mvn -B install -Dskip.frontend=false
+
+      - name: upload jar artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: search-ui-jar
+          path: backend/target/hitorro-search-ui-*.jar
+          if-no-files-found: error
+
+  docker:
+    name: docker publish (tag only)
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: derive image tag
+        id: tag
+        run: echo "tag=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: build + push image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: deploy/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/hitorro-search-ui:${{ steps.tag.outputs.tag }}
+            ghcr.io/${{ github.repository_owner }}/hitorro-search-ui:latest
+          cache-from: type=gha
+          cache-to:   type=gha,mode=max

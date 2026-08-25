@@ -20,7 +20,7 @@ export function LangSelect() {
   const setLang = useSearchStore((s) => s.setLang)
   return (
     <select
-      className="border border-slate-300 rounded px-2 py-1 text-sm bg-white"
+      className="border border-slate-300 dark:border-slate-600 rounded px-2 py-1 text-sm bg-white dark:bg-slate-800 dark:text-slate-100"
       value={lang}
       onChange={(e) => setLang(e.target.value)}
       title="Query-time language for i18n fields (title/body in the right mls entry)"

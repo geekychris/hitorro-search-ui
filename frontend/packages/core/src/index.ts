@@ -12,14 +12,19 @@ export type { AppShellProps } from './components/shell/AppShell'
 export { IndexPicker } from './components/shell/IndexPicker'
 export { ModeSwitch }  from './components/shell/ModeSwitch'
 export { LangSelect }  from './components/shell/LangSelect'
-export { SearchBox }   from './components/enduser/SearchBox'
-export { FacetPanel }  from './components/enduser/FacetPanel'
-export { ResultsList } from './components/enduser/ResultsList'
-export { DocDrawer }   from './components/enduser/DocDrawer'
+export { ThemeToggle } from './components/shell/ThemeToggle'
+export { Skeleton, ResultCardSkeleton, FacetSkeleton } from './components/shell/Skeleton'
+export { SearchBox }      from './components/enduser/SearchBox'
+export { FacetPanel }     from './components/enduser/FacetPanel'
+export { ResultsList }    from './components/enduser/ResultsList'
+export { DocDrawer }      from './components/enduser/DocDrawer'
+export { AppliedFilters } from './components/enduser/AppliedFilters'
+export { SortMenu }       from './components/enduser/SortMenu'
 export { QueryBar }     from './components/analyst/QueryBar'
 export { ResultsTable } from './components/analyst/ResultsTable'
 export { RowInspector } from './components/analyst/RowInspector'
 export { FacetTree }    from './components/analyst/FacetTree'
+export { ExportMenu }   from './components/analyst/ExportMenu'
 
 // Renderer — for per-type override registration.
 export { TypeRenderer }   from './renderer/TypeRenderer'
@@ -42,8 +47,11 @@ export { ClientContext, useClient } from './hooks/useClient'
 
 // Hooks — for apps that build custom UI on top of the same data.
 export { useSearch, useIndexes, useIndexSchema, useDoc } from './hooks/queries'
+export { useTheme } from './hooks/useTheme'
+export type { Theme } from './hooks/useTheme'
 export { useSearchStore }  from './state/store'
 export type { SearchState } from './state/store'
+export { useUrlSync }       from './state/urlSync'
 
 // Types — TS mirror of BFF DTOs.
 export type {

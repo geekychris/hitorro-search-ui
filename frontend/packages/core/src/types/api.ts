@@ -17,6 +17,22 @@ export interface SearchRequest {
   lang?: string
 }
 
+/** Cross-index federation request. Same shape as SearchRequest but
+ *  `indexes` (plural) + an optional `merger` for cross-index rank
+ *  fusion ({@code score | rrf | field:name[:desc]}). */
+export interface MultiSearchRequest {
+  indexes: string[]
+  q?: string
+  filters?: Record<string, string[]>
+  facets?: string[]
+  sort?: string
+  page?: number
+  size?: number
+  mode?: Mode
+  lang?: string
+  merger?: string
+}
+
 export interface SearchHit {
   id: string | null
   htType: string | null

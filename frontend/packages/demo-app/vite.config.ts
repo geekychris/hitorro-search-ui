@@ -5,21 +5,21 @@ import react from '@vitejs/plugin-react'
 // maven-resources-plugin copies dist/ into the backend jar's
 // src/main/resources/static/ during `mvn package`, so the Spring Boot
 // app serves this directly at /.
+//
+// SEARCH_UI_DEV_PROXY overrides the /api/* proxy target for `pnpm dev`.
+// Defaults to :8100 to match the packaged backend; override when you're
+// running the BFF on a different port or a remote host.
+const proxyTarget = process.env.SEARCH_UI_DEV_PROXY ?? 'http://localhost:8100'
+
 export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    // Dev-mode: proxy /api/* to the backend on :8100 so `pnpm dev`
-    // works while the backend is running via `mesh-up.sh`.
     proxy: {
-      '/api': {
-        target: 'http://localhost:8100',
-        changeOrigin: true,
-      },
+      '/api': { target: proxyTarget, changeOrigin: true },
     },
   },
   build: {
-    // Emit into ./dist (default); Maven copies it into the jar.
     sourcemap: true,
   },
 })

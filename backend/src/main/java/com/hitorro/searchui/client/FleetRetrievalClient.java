@@ -41,9 +41,21 @@ public class FleetRetrievalClient {
 
     /** POST /api/retrieval/execute — coordinator with the full JVS query. */
     public JsonNode execute(JsonNode body) {
+        return post("/api/retrieval/execute", body);
+    }
+
+    /** POST /api/retrieval/search-multiple — cross-index federation.
+     *  Body is the flat shape fleet-retrieval's SearchMultipleController
+     *  expects: {@code {indexNames:[…], query:"…", offset:…, limit:…,
+     *  lang:"en", facets:[…], merger:"score|rrf|field:name[:desc]"}}. */
+    public JsonNode searchMultiple(JsonNode body) {
+        return post("/api/retrieval/search-multiple", body);
+    }
+
+    private JsonNode post(String path, JsonNode body) {
         try {
             return client.post()
-                    .uri("/api/retrieval/execute")
+                    .uri(path)
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(body)
                     .retrieve()

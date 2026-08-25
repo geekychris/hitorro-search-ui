@@ -1,5 +1,5 @@
 import type {
-  IndexInfo, IndexSchema, SearchRequest, SearchResponse,
+  IndexInfo, IndexSchema, SearchRequest, SearchResponse, MultiSearchRequest,
 } from '../types/api'
 
 /**
@@ -25,6 +25,7 @@ export interface SearchClient {
   indexes(): Promise<IndexInfo[]>
   schema(index: string): Promise<IndexSchema>
   search(req: SearchRequest): Promise<SearchResponse>
+  searchMultiple(req: MultiSearchRequest): Promise<SearchResponse>
   doc(index: string, key: string): Promise<any>
 }
 
@@ -69,6 +70,13 @@ export function createSearchClient(opts: ClientOptions = {}): SearchClient {
     },
     async search(req) {
       return json<SearchResponse>(await f(url('/api/search'), {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(req),
+      }))
+    },
+    async searchMultiple(req) {
+      return json<SearchResponse>(await f(url('/api/search-multiple'), {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(req),
