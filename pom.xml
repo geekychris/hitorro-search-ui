@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.hitorro</groupId>
+    <artifactId>hitorro-search-ui-parent</artifactId>
+    <version>3.0.1</version>
+    <packaging>pom</packaging>
+
+    <name>hitorro-search-ui (parent)</name>
+    <description>
+        Extensible search UI for hitorro. Ships a React library + reference
+        SPA + Spring Boot BFF that proxies hitorro-fleet-retrieval. Runs
+        Mac-local via mesh-up.sh, containerised via Docker, or in K8s /
+        Orion via the manifests under deploy/.
+    </description>
+
+    <modules>
+        <module>backend</module>
+    </modules>
+</project>

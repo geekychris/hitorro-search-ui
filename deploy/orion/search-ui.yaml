@@ -1,0 +1,55 @@
+# hitorro-search-ui — Orion service manifest.
+#
+# Positioned as a sibling to hitorro-fleet-retrieval in the fleet-*
+# family. Orion's ClusterManager discovers this via the `hitorro-search-ui`
+# capability tag; the driver's Fleet panel picks it up under
+# `platform: orion`.
+#
+# Register:
+#   orion service register deploy/orion/search-ui.yaml
+apiVersion: orion/v1
+kind: Service
+metadata:
+  name: hitorro-search-ui
+  labels:
+    app: hitorro-search-ui
+    family: hitorro-fleet
+spec:
+  capability: hitorro-search-ui
+  version: 3.0.1
+
+  # Runtime — Java 21 fat JAR. Orion places the jar on any node in
+  # the pool tagged for the family; the ${PIPELINES_HOME} substitution
+  # is expanded by Orion at deploy time from the tenant config.
+  runtime:
+    kind: java
+    javaVersion: 21
+    jar: hitorro-search-ui-3.0.1.jar
+    args:
+      - --hitorro.searchui.fleet.base-url=${FLEET_RETRIEVAL_URL:http://fleet-retrieval:8095}
+      - --hitorro.searchui.pipelines-home=${PIPELINES_HOME:/data/pipelines}
+    javaOpts: "-Xms128m -Xmx512m -XX:+UseG1GC -XX:MaxGCPauseMillis=100"
+
+  ports:
+    - name: http
+      containerPort: 8100
+      exposedAs: search
+
+  health:
+    livenessPath:  /actuator/health/liveness
+    readinessPath: /actuator/health/readiness
+    intervalSeconds: 10
+    startPeriodSeconds: 20
+
+  resources:
+    requests: { cpu: "100m", memory: "256Mi" }
+    limits:   { cpu: "500m", memory: "768Mi" }
+
+  # Orion discovery: publish the search endpoint so the driver's
+  # Fleet panel can link to it and any other service can consume /api/*.
+  discovery:
+    endpoints:
+      - name: search
+        protocol: http
+        port: 8100
+        path: /

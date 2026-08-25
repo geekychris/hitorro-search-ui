@@ -1,0 +1,9 @@
+apiVersion: v2
+name: hitorro-search-ui
+description: |
+  Search UI for hitorro. Spring Boot BFF + bundled React SPA at
+  /api/* and / respectively. Talks to hitorro-fleet-retrieval via
+  its /api/retrieval/execute endpoint.
+type: application
+version: 0.1.0
+appVersion: "3.0.1"

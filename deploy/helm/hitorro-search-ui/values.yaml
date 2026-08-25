@@ -1,0 +1,48 @@
+# hitorro-search-ui — Helm values. Everything overridable via
+# `helm install … --set foo.bar=baz` or a values file.
+
+image:
+  # Registry + tag. Point at your own registry after `docker push`.
+  repository: hitorro/search-ui
+  tag: "3.0.1"
+  pullPolicy: IfNotPresent
+
+replicaCount: 2
+
+service:
+  type: ClusterIP
+  port: 8100
+
+# Fleet-retrieval endpoint the BFF proxies to. Default matches a
+# fleet-retrieval Service in the same namespace named "fleet-retrieval"
+# listening on 8095.
+fleet:
+  baseUrl: http://fleet-retrieval:8095
+
+# JVM sizing — see Dockerfile's JAVA_OPTS default for rationale.
+javaOpts: "-Xms128m -Xmx512m -XX:+UseG1GC -XX:MaxGCPauseMillis=100"
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "256Mi"
+  limits:
+    cpu: "500m"
+    memory: "768Mi"
+
+# Kubernetes probes hit the actuator health endpoint.
+livenessProbe:
+  initialDelaySeconds: 20
+  periodSeconds: 10
+readinessProbe:
+  initialDelaySeconds: 5
+  periodSeconds: 5
+
+# Ingress — set enabled: true + a host to expose externally.
+ingress:
+  enabled: false
+  className: nginx
+  host: search.hitorro.example.com
+  tls:
+    enabled: false
+    secretName: search-ui-tls

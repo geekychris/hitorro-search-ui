@@ -1,0 +1,24 @@
+# Maven
+target/
+
+# Node / pnpm
+node_modules/
+.pnpm-store/
+
+# Vite / bundler output
+frontend/packages/*/dist/
+backend/src/main/resources/static/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+
+# Test coverage
+coverage/
+
+# Lockfiles are useful; keep them
+!frontend/pnpm-lock.yaml

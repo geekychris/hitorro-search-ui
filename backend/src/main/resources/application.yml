@@ -1,0 +1,77 @@
+# hitorro-search-ui — Spring Boot BFF configuration.
+# Every property is overridable via env var or command line.
+server:
+  port: ${SEARCH_UI_PORT:8100}
+  # SPA fallback so deep links (/#/search/...) don't 404 on refresh.
+  # Spring serves any un-matched GET as /index.html via error-controller.
+
+spring:
+  application:
+    name: hitorro-search-ui
+  jackson:
+    default-property-inclusion: non_null
+  # Static resources ship inside the fat jar under /static/ (populated
+  # by the maven-resources-plugin from frontend/packages/demo-app/dist).
+  web:
+    resources:
+      static-locations: classpath:/static/
+
+hitorro:
+  searchui:
+    fleet:
+      # Base URL of hitorro-fleet-retrieval. Mac-local mesh-up.sh boots it
+      # on 8095; docker-compose service name is `fleet-retrieval`.
+      base-url: ${SEARCH_UI_FLEET_URL:http://localhost:8095}
+      # Timeout for outbound calls to fleet-retrieval. Kept snug because
+      # the coordinator is expected to be co-located.
+      timeout-ms: ${SEARCH_UI_FLEET_TIMEOUT_MS:15000}
+    # Path to ~/.hitorro/pipelines so we can read .jvs-type.json sidecars
+    # for /api/indexes/{name}/schema. Only used when running co-located
+    # with the mesh — in K8s the fleet-retrieval /api/retrieval/indexes
+    # response is the source of truth.
+    pipelines-home: ${HITORRO_PIPELINES_HOME:${user.home}/.hitorro/pipelines}
+    # CORS origins allowed for /api/**. Development default lets any
+    # localhost port hit us so `pnpm dev` on 5173 works alongside the
+    # packaged fat jar on 8100. Tighten in prod via profile.
+    cors:
+      allowed-origins: ${SEARCH_UI_CORS_ORIGINS:*}
+
+logging:
+  level:
+    com.hitorro.searchui: INFO
+    org.springframework.web: WARN
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+---
+# ==== docker profile ==================================================
+# Activated with SPRING_PROFILES_ACTIVE=docker. Fleet URL points at the
+# docker-compose service name; CORS still open for demo simplicity.
+spring:
+  config:
+    activate:
+      on-profile: docker
+hitorro:
+  searchui:
+    fleet:
+      base-url: http://fleet-retrieval:8095
+
+---
+# ==== k8s profile =====================================================
+# CORS tightened to same-origin (ingress terminates TLS and hits us
+# via a K8s Service in the same namespace).
+spring:
+  config:
+    activate:
+      on-profile: k8s
+hitorro:
+  searchui:
+    cors:
+      allowed-origins: ""   # empty = same-origin only

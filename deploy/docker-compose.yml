@@ -1,0 +1,47 @@
+# Isolated demo — fleet-retrieval + search-ui, no full mesh.
+# Mounts your local ~/.hitorro/pipelines/ into the fleet-retrieval
+# container in shared mode so it can serve any indexes / KV stores your
+# mesh has already produced. Ideal for showing the UI to someone
+# without asking them to boot the whole mesh.
+#
+# Bring up:  docker compose up --build
+# Then open: http://localhost:8100
+services:
+
+  fleet-retrieval:
+    image: eclipse-temurin:21-jre
+    container_name: hitorro-fleet-retrieval
+    # Runs the fat jar you built with `mvn install` in hitorro-fleet-retrieval/.
+    # If you want a fully self-contained image, wrap fleet-retrieval in its own
+    # Dockerfile — for the demo we mount the jar directly to keep things small.
+    volumes:
+      - ${HOME}/hitorro/hitorro-fleet-retrieval/target/hitorro-fleet-retrieval-3.0.1.jar:/app/fleet-retrieval.jar:ro
+      - ${HOME}/.hitorro/pipelines:/data/pipelines:ro
+    command:
+      - java
+      - -jar
+      - /app/fleet-retrieval.jar
+      - --server.port=8095
+      - --hitorro.fleet.retrieval.mode=shared
+      - --hitorro.fleet.retrieval.pipelines-home=/data/pipelines
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://localhost:8095/api/retrieval/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 6
+
+  search-ui:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: hitorro-search-ui
+    depends_on:
+      fleet-retrieval:
+        condition: service_healthy
+    ports:
+      - "8100:8100"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      # Overrides the docker profile's default (already fleet-retrieval:8095)
+      # — kept explicit so the value is easy to spot when debugging.
+      SEARCH_UI_FLEET_URL: http://fleet-retrieval:8095
