@@ -52,6 +52,12 @@ describe('collectNer', () => {
     expect(collectNer([{ lang: 'en' }] as any, 'en')).toEqual([])
     expect(collectNer([{ lang: 'en', segmented_ner: 'not-an-array' }] as any, 'en')).toEqual([])
   })
+
+  it('tolerates non-array mlses (some JVS types emit body.mls as {})', () => {
+    expect(collectNer({} as any, 'en')).toEqual([])
+    expect(collectNer(null as any, 'en')).toEqual([])
+    expect(collectNer(undefined as any, 'en')).toEqual([])
+  })
 })
 
 describe('entityColor', () => {

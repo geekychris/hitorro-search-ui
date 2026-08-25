@@ -71,6 +71,14 @@ public class FleetRetrievalClient {
         return get("/api/retrieval/documents/" + enc(indexName) + "/" + enc(key));
     }
 
+    /** GET /api/retrieval/fields/{indexName} — Lucene FieldInfos:
+     *  {@code {indexName, numDocs, fields:[{name, indexed, docValuesType,
+     *  pointDimensionCount, sampleTerms}]}}. Used by the schema hint
+     *  classifier to discover physical field names + sortable DocValues. */
+    public JsonNode fields(String indexName) {
+        return get("/api/retrieval/fields/" + enc(indexName));
+    }
+
     // ---------------------------------------------------------------- helpers
 
     private JsonNode get(String path) {

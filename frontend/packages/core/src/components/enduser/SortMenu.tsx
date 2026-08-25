@@ -3,14 +3,20 @@ import { useSearchStore } from '../../state/store'
 import { useIndexSchema } from '../../hooks/queries'
 
 /**
- * Sort dropdown for end-user mode. Ships with three canonical options
- * (relevance, newest, oldest) plus one entry per {@code date}-hint
- * field the index schema advertises — so a mail index gets "sort by
- * received date", a photo index gets "sort by taken date", etc.
+ * Sort dropdown for end-user mode.
  *
- * The store's {@code sort} field is passed through to the BFF verbatim.
- * Recognised keywords: {@code relevance}, {@code date_desc},
- * {@code date_asc}. Anything else is treated as {@code field:direction}.
+ * <p>Shows relevance + one entry per sortable field the schema
+ * advertises. "Sortable" means the field has NUMERIC / SORTED_NUMERIC
+ * DocValues in Lucene — populated by the BFF from FieldInfos, so it
+ * reflects reality regardless of what the type sidecar declared. Date
+ * fields (a subset of sortable) additionally power the
+ * "newest first" / "oldest first" shortcut entries when at least one
+ * date field is present.</p>
+ *
+ * <p>Every non-relevance value serialises to the {@code field:direction}
+ * shape the BFF's {@code JvsQueryShaper} parses. The coordinator then
+ * sees a canonical sort chain regardless of which dropdown entry the
+ * user picked.</p>
  */
 export function SortMenu() {
   const index = useSearchStore((s) => s.index)
@@ -18,7 +24,16 @@ export function SortMenu() {
   const setSort = useSearchStore((s) => s.setSort)
   const { data: schema } = useIndexSchema(index)
 
-  const dateFields = schema?.rendererHints?.date ?? []
+  const hints = schema?.rendererHints
+  const dateFields = hints?.date ?? []
+  // Prefer the explicit sortable bucket; fall back to date fields for
+  // older BFFs that don't populate it (single-source pre-augmentation).
+  const sortableFields = hints?.sortable && hints.sortable.length > 0
+    ? hints.sortable
+    : dateFields
+  const primaryDate = dateFields[0]
+  const newestValue = primaryDate ? `${primaryDate}:desc` : null
+  const oldestValue = primaryDate ? `${primaryDate}:asc`  : null
 
   return (
     <div className="flex items-center gap-1 text-xs">
@@ -29,9 +44,9 @@ export function SortMenu() {
         onChange={(e) => setSort(e.target.value)}
       >
         <option value="relevance">relevance</option>
-        <option value="date_desc">newest first</option>
-        <option value="date_asc">oldest first</option>
-        {dateFields.map((f) => (
+        {newestValue && <option value={newestValue}>newest first</option>}
+        {oldestValue && <option value={oldestValue}>oldest first</option>}
+        {sortableFields.map((f) => (
           <React.Fragment key={f}>
             <option value={`${f}:desc`}>{f} ↓</option>
             <option value={`${f}:asc`}>{f} ↑</option>

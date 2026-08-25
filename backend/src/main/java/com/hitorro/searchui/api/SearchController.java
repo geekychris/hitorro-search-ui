@@ -100,7 +100,10 @@ public class SearchController {
         // to the coordinator so it can drive the SelectTreeMerger with
         // the caller's preferences. Both optional — coordinator falls
         // back to sane defaults when missing.
-        java.util.List<SearchRequest.SortSpec> chain = single.sortChainOrEmpty();
+        // Resolve via the shaper so the shorthand `sort` string (what the
+        // UI's SortMenu sends) and the explicit `sortChain` array both
+        // reach the coordinator through the same code path.
+        java.util.List<SearchRequest.SortSpec> chain = shaper.resolveSortChain(single);
         if (!chain.isEmpty()) {
             ArrayNode sortArr = body.putArray("sort");
             for (SearchRequest.SortSpec s : chain) {

@@ -114,6 +114,84 @@ class JvsQueryShaperTest {
             assertThat(body.get("query").get("search").get("offset").asInt()).isEqualTo(75);
             assertThat(body.get("query").get("search").get("limit").asInt()).isEqualTo(25);
         }
+
+        @Test
+        void shorthandSortEmitsBothSearchSortAndTopLevelSort() {
+            // Sort at query.search.sort drives single-index IndexRetriever;
+            // top-level sort drives /search-multiple's SelectTreeMerger.
+            // Same array in both — coordinator only reads the one that
+            // matches its endpoint, so emitting both is safe.
+            SearchRequest r = new SearchRequest(
+                    "idx", "chase", null, null,
+                    "times.date_received:desc", 0, 20, "end-user", "en");
+            ObjectNode body = shaper.toExecuteRequest(r);
+
+            JsonNode searchSort = body.get("query").get("search").get("sort");
+            JsonNode topSort    = body.get("sort");
+            assertThat(searchSort).isNotNull();
+            assertThat(topSort).isNotNull();
+            assertThat(searchSort.get(0).get("field").asText()).isEqualTo("times.date_received");
+            assertThat(searchSort.get(0).get("direction").asText()).isEqualTo("desc");
+            assertThat(topSort.get(0).get("field").asText()).isEqualTo("times.date_received");
+            assertThat(topSort.get(0).get("direction").asText()).isEqualTo("desc");
+        }
+
+        @Test
+        void relevanceEmitsNoSortNodes() {
+            SearchRequest r = new SearchRequest(
+                    "idx", "chase", null, null,
+                    "relevance", 0, 20, "end-user", "en");
+            ObjectNode body = shaper.toExecuteRequest(r);
+            assertThat(body.get("query").get("search").has("sort")).isFalse();
+            assertThat(body.has("sort")).isFalse();
+        }
+
+        @Test
+        void nullSortEmitsNoSortNodes() {
+            SearchRequest r = new SearchRequest(
+                    "idx", "chase", null, null,
+                    null, 0, 20, "end-user", "en");
+            ObjectNode body = shaper.toExecuteRequest(r);
+            assertThat(body.get("query").get("search").has("sort")).isFalse();
+            assertThat(body.has("sort")).isFalse();
+        }
+
+        @Test
+        void ascShorthandStaysAsc() {
+            SearchRequest r = new SearchRequest(
+                    "idx", "chase", null, null,
+                    "title:asc", 0, 20, "end-user", "en");
+            ObjectNode body = shaper.toExecuteRequest(r);
+            assertThat(body.get("query").get("search").get("sort").get(0).get("direction").asText())
+                    .isEqualTo("asc");
+        }
+
+        @Test
+        void bareFieldDefaultsToDesc() {
+            SearchRequest r = new SearchRequest(
+                    "idx", "chase", null, null,
+                    "times.date_received", 0, 20, "end-user", "en");
+            ObjectNode body = shaper.toExecuteRequest(r);
+            assertThat(body.get("query").get("search").get("sort").get(0).get("direction").asText())
+                    .isEqualTo("desc");
+        }
+
+        @Test
+        void explicitSortChainWinsOverShorthand() {
+            // If a caller passes both — sortChain (structured) takes
+            // precedence, shorthand is ignored. Matches resolveSortChain's
+            // contract so upstream sort-menu changes don't override an
+            // explicit chain composed by e.g. a saved-search feature.
+            SearchRequest r = new SearchRequest(
+                    "idx", "chase", null, null,
+                    "score", 0, 20, "end-user", "en",
+                    List.of(new SearchRequest.SortSpec("date", "asc")),
+                    null);
+            ObjectNode body = shaper.toExecuteRequest(r);
+            JsonNode sort = body.get("query").get("search").get("sort");
+            assertThat(sort.get(0).get("field").asText()).isEqualTo("date");
+            assertThat(sort.get(0).get("direction").asText()).isEqualTo("asc");
+        }
     }
 
     @Nested

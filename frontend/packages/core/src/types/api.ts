@@ -70,6 +70,11 @@ export interface RendererHints {
   date:       string[]
   mls:        string[]
   identifier: string[]
+  /** Fields with sortable DocValues (numeric + date). Superset of
+   *  {@code date} — includes long / int / double fields too. Populated
+   *  from Lucene FieldInfos on the BFF side so it reflects what's
+   *  actually sortable, not just what the type sidecar declares. */
+  sortable?:  string[]
 }
 
 export interface IndexSchema {

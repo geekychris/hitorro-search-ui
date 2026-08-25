@@ -93,20 +93,28 @@ public class JvsQueryShaper {
             summarize.put("maxWords", 60);
         }
 
-        // ---- composite sort chain + per-aggregate merge policies ----
-        // Both fields are optional in the UI DTO; only emit them when
-        // set so the coordinator's backward-compat defaults kick in.
-        // Emitted at the TOP LEVEL of the JVS body (siblings of
-        // indexName + query), matching what fleet-retrieval's
-        // /api/retrieval/search-multiple + /api/retrieval/execute parse.
-        List<SearchRequest.SortSpec> chain = req.sortChainOrEmpty();
-        if (!chain.isEmpty()) {
-            ArrayNode sortArr = body.putArray("sort");
-            for (SearchRequest.SortSpec s : chain) {
+        // ---- sort ------------------------------------------------------
+        // Resolve the effective sort chain from either:
+        //   1. explicit req.sortChain (list of {field, direction} — takes
+        //      priority if non-empty), OR
+        //   2. the shorthand req.sort string ("field:desc" / "field:asc";
+        //      "relevance" and empty are treated as no-op).
+        // The retrieval pipeline reads the sort from search.sort inside
+        // the query node — IndexRetriever hands it to the SearchProvider's
+        // sort-aware overload. The same array is ALSO emitted at the top
+        // level, which is where fleet-retrieval's /search-multiple + the
+        // SelectTreeMerger read it for federated cross-source sort. Both
+        // are byte-identical, and the coordinator only reads the one that
+        // matches its endpoint, so emitting both is safe.
+        List<SearchRequest.SortSpec> effectiveChain = resolveSortChain(req);
+        if (!effectiveChain.isEmpty()) {
+            ArrayNode searchSort = search.putArray("sort");
+            ArrayNode topSort    = body.putArray("sort");
+            for (SearchRequest.SortSpec s : effectiveChain) {
                 if (s.field() == null || s.field().isBlank()) continue;
-                ObjectNode key = sortArr.addObject();
-                key.put("field", s.field());
-                key.put("direction", "asc".equalsIgnoreCase(s.direction()) ? "asc" : "desc");
+                String dir = "asc".equalsIgnoreCase(s.direction()) ? "asc" : "desc";
+                appendSortEntry(searchSort, s.field(), dir);
+                appendSortEntry(topSort,    s.field(), dir);
             }
         }
         Map<String, String> policies = req.mergePoliciesOrEmpty();
@@ -116,6 +124,54 @@ public class JvsQueryShaper {
         }
 
         return body;
+    }
+
+    /**
+     * Resolve the shorthand + explicit sort inputs into a single canonical
+     * chain. Explicit {@code sortChain} wins; otherwise the shorthand
+     * {@code sort} string is parsed via {@link #parseSortShorthand(String)}.
+     * "relevance" / null / blank all resolve to an empty list — the shaper
+     * emits no sort node, coordinator falls back to score order.
+     *
+     * <p>Package-visible so multi-index composers ({@code SearchController})
+     * can reuse the same resolution path without duplicating "which of
+     * the two fields did the caller populate?" branching.</p>
+     */
+    public List<SearchRequest.SortSpec> resolveSortChain(SearchRequest req) {
+        List<SearchRequest.SortSpec> chain = req.sortChainOrEmpty();
+        if (!chain.isEmpty()) return chain;
+        return parseSortShorthand(req.sortOrRelevance());
+    }
+
+    /**
+     * Parse the UI's shorthand sort string ({@code "field:desc"},
+     * {@code "field:asc"}, comma-joined multi-key, or the tokens
+     * {@code "relevance"} / {@code "score"} / empty) into a canonical
+     * {@link SearchRequest.SortSpec} list. Bare field names default to
+     * DESC — the historical UI convention.
+     */
+    static List<SearchRequest.SortSpec> parseSortShorthand(String sort) {
+        if (sort == null || sort.isBlank()) return List.of();
+        String lc = sort.trim().toLowerCase();
+        // "relevance" / "score" / "_score" → Lucene default; emit nothing.
+        if (lc.equals("relevance") || lc.equals("score") || lc.equals("_score")) return List.of();
+        List<SearchRequest.SortSpec> out = new ArrayList<>();
+        for (String seg : sort.split(",")) {
+            String trimmed = seg.trim();
+            if (trimmed.isEmpty()) continue;
+            int colon = trimmed.indexOf(':');
+            String field = colon < 0 ? trimmed : trimmed.substring(0, colon).trim();
+            String dir   = colon < 0 ? "desc"  : trimmed.substring(colon + 1).trim();
+            if (field.isEmpty()) continue;
+            out.add(new SearchRequest.SortSpec(field, "asc".equalsIgnoreCase(dir) ? "asc" : "desc"));
+        }
+        return out;
+    }
+
+    private static void appendSortEntry(ArrayNode arr, String field, String direction) {
+        ObjectNode key = arr.addObject();
+        key.put("field", field);
+        key.put("direction", direction);
     }
 
     /**

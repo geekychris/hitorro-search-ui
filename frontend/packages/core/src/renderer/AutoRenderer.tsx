@@ -122,8 +122,13 @@ export function pickMls(mls: any, lang: string, field: string = 'text'): any {
   return match?.[field] ?? null
 }
 
-/** Pull `[{term&&NE_Type}]` chips from every mls entry's segmented_ner. */
-export function collectNer(mlses: any[], lang: string): { term: string; type: string }[] {
+/** Pull `[{term&&NE_Type}]` chips from every mls entry's segmented_ner.
+ *  Tolerates non-array input (some JVS types serialise {@code body.mls}
+ *  as an object when empty, which would otherwise throw when iterated —
+ *  crashing an entire federated render when any single hit has that
+ *  shape). */
+export function collectNer(mlses: any, lang: string): { term: string; type: string }[] {
+  if (!Array.isArray(mlses)) return []
   const re = /\[\{([^&]+)&&(NE_[A-Za-z]+)\}\]/g
   const seen = new Set<string>()
   const out: { term: string; type: string }[] = []
