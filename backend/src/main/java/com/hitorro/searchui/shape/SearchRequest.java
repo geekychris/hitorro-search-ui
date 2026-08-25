@@ -48,8 +48,37 @@ public record SearchRequest(
         Integer page,
         Integer size,
         String mode,
-        String lang
+        String lang,
+        /**
+         * Optional composite sort keys. When present, forwarded to the
+         * coordinator as the {@code sort} array + drives the
+         * SelectTreeMerger's comparator (both cross-index and, once the
+         * coordinator adopts it, single-index too). Nullable — falls
+         * back to the shorthand {@code sort} field / relevance.
+         */
+        List<SortSpec> sortChain,
+        /**
+         * Per-aggregate-name merge policy overrides. Keys are the
+         * canonical aggregate names ({@code summary}, {@code facets},
+         * {@code ai_summary}); values are {@link String} names of the
+         * {@code com.hitorro.retrieval.aggregate.MergePolicy} enum
+         * ({@code SUMMED}, {@code PER_INDEX}, {@code CONCATENATED},
+         * {@code RESUMMARIZED}, {@code PICK_FIRST}). Only meaningful
+         * for federated (multi-index) searches. Missing keys use each
+         * aggregate's default policy.
+         */
+        Map<String, String> mergePolicies
 ) {
+    /** Legacy 9-arg constructor — no sortChain / mergePolicies.
+     *  Kept so existing test fixtures and internal callers that don't
+     *  care about the new fields don't have to pass nulls. */
+    public SearchRequest(String index, String q, Map<String, List<String>> filters,
+                         List<String> facets, String sort, Integer page, Integer size,
+                         String mode, String lang) {
+        this(index, q, filters, facets, sort, page, size, mode, lang,
+             /*sortChain*/ null, /*mergePolicies*/ null);
+    }
+
     public String modeOrDefault() { return mode == null || mode.isBlank() ? "end-user" : mode; }
     public String langOrDefault() { return lang == null || lang.isBlank() ? "en" : lang; }
     public int pageOrDefault()    { return page == null || page < 0 ? 0 : page; }
@@ -58,4 +87,13 @@ public record SearchRequest(
     public Map<String, List<String>> filtersOrEmpty() { return filters == null ? Map.of() : filters; }
     public String qOrMatchAll()   { return (q == null || q.isBlank()) ? "*:*" : q; }
     public String sortOrRelevance() { return sort == null || sort.isBlank() ? "relevance" : sort; }
+    public List<SortSpec> sortChainOrEmpty() { return sortChain == null ? List.of() : sortChain; }
+    public Map<String, String> mergePoliciesOrEmpty() { return mergePolicies == null ? Map.of() : mergePolicies; }
+
+    /**
+     * One key in a composite sort chain. {@code direction} is
+     * {@code "asc"} or {@code "desc"} — case-insensitive; unknown
+     * values are treated as {@code desc} downstream.
+     */
+    public record SortSpec(String field, String direction) { }
 }

@@ -32,8 +32,25 @@ public record SearchResponse(
         long tookMs,
         List<String> stages,
         List<Hit> hits,
-        Map<String, Facet> facets
+        Map<String, Facet> facets,
+        /**
+         * Merged per-source aggregates from the coordinator's
+         * cross-index merger. Passes through as {@link JsonNode} so the
+         * BFF stays schema-agnostic — the React side reads them as raw
+         * JSON, keying into {@code byIndex.<sourceName>} for per-source
+         * drill-in. Null / empty on single-index searches.
+         */
+        List<JsonNode> aggregates
 ) {
+
+    /** 7-arg legacy constructor — populates {@code aggregates} as null.
+     *  Kept so existing callers that only care about the flat facets
+     *  map don't need to pass an extra arg. */
+    public SearchResponse(long total, int page, int size, long tookMs,
+                          List<String> stages, List<Hit> hits,
+                          Map<String, Facet> facets) {
+        this(total, page, size, tookMs, stages, hits, facets, null);
+    }
 
     /**
      * @param id        the document's canonical id (extracted from

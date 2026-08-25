@@ -93,6 +93,28 @@ public class JvsQueryShaper {
             summarize.put("maxWords", 60);
         }
 
+        // ---- composite sort chain + per-aggregate merge policies ----
+        // Both fields are optional in the UI DTO; only emit them when
+        // set so the coordinator's backward-compat defaults kick in.
+        // Emitted at the TOP LEVEL of the JVS body (siblings of
+        // indexName + query), matching what fleet-retrieval's
+        // /api/retrieval/search-multiple + /api/retrieval/execute parse.
+        List<SearchRequest.SortSpec> chain = req.sortChainOrEmpty();
+        if (!chain.isEmpty()) {
+            ArrayNode sortArr = body.putArray("sort");
+            for (SearchRequest.SortSpec s : chain) {
+                if (s.field() == null || s.field().isBlank()) continue;
+                ObjectNode key = sortArr.addObject();
+                key.put("field", s.field());
+                key.put("direction", "asc".equalsIgnoreCase(s.direction()) ? "asc" : "desc");
+            }
+        }
+        Map<String, String> policies = req.mergePoliciesOrEmpty();
+        if (!policies.isEmpty()) {
+            ObjectNode p = body.putObject("mergePolicies");
+            policies.forEach(p::put);
+        }
+
         return body;
     }
 
@@ -180,6 +202,16 @@ public class JvsQueryShaper {
 
         Map<String, SearchResponse.Facet> facets = extractFacets(coordResp, req.facetsOrEmpty());
 
+        // Pass through the coordinator's `aggregates` array verbatim
+        // (JsonNode list). Multi-index searches carry byIndex.<source>
+        // sub-objects here; single-index searches leave it null.
+        List<JsonNode> aggregates = null;
+        JsonNode aggs = coordResp.get("aggregates");
+        if (aggs != null && aggs.isArray() && aggs.size() > 0) {
+            aggregates = new ArrayList<>(aggs.size());
+            for (JsonNode a : aggs) aggregates.add(a);
+        }
+
         return new SearchResponse(
                 total,
                 req.pageOrDefault(),
@@ -187,7 +219,8 @@ public class JvsQueryShaper {
                 tookMs,
                 stages,
                 hits,
-                facets
+                facets,
+                aggregates
         );
     }
 

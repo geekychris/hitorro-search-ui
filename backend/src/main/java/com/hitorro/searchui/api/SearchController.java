@@ -74,12 +74,15 @@ public class SearchController {
             throw new IllegalArgumentException("indexes array is required");
         }
         // Compose a single query string with the same rules as the
-        // single-index shaper — reuse it via a synthetic SearchRequest.
+        // single-index shaper — reuse it via a synthetic SearchRequest
+        // carrying every field including the new sortChain + policies.
         SearchRequest single = new SearchRequest(
                 indexes.get(0), req.q(), req.filters(), req.facets(),
                 req.sort(), req.page(), req.size(),
                 req.mode() == null ? "analyst" : req.mode(),
-                req.lang());
+                req.lang(),
+                req.sortChain(),
+                req.mergePolicies());
         String composed = shaper.composeQueryString(single);
 
         ObjectNode body = JSON.createObjectNode();
@@ -93,19 +96,44 @@ public class SearchController {
         single.facetsOrEmpty().forEach(facets::add);
         if (req.merger() != null && !req.merger().isBlank()) body.put("merger", req.merger());
 
+        // Forward the composite sort chain + per-aggregate merge policies
+        // to the coordinator so it can drive the SelectTreeMerger with
+        // the caller's preferences. Both optional — coordinator falls
+        // back to sane defaults when missing.
+        java.util.List<SearchRequest.SortSpec> chain = single.sortChainOrEmpty();
+        if (!chain.isEmpty()) {
+            ArrayNode sortArr = body.putArray("sort");
+            for (SearchRequest.SortSpec s : chain) {
+                if (s.field() == null || s.field().isBlank()) continue;
+                ObjectNode key = sortArr.addObject();
+                key.put("field", s.field());
+                key.put("direction", "asc".equalsIgnoreCase(s.direction()) ? "asc" : "desc");
+            }
+        }
+        java.util.Map<String, String> policies = single.mergePoliciesOrEmpty();
+        if (!policies.isEmpty()) {
+            ObjectNode p = body.putObject("mergePolicies");
+            policies.forEach(p::put);
+        }
+
         JsonNode coord = fleet.searchMultiple(body);
         return shaper.fromExecuteResponse(single, coord, System.currentTimeMillis() - t0);
     }
 
     /** UI-friendly request DTO for the multi-index endpoint. Mirrors
-     *  {@link SearchRequest} but takes an {@code indexes} list plus a
-     *  {@code merger} option ({@code score | rrf | field:name[:desc]}). */
+     *  {@link SearchRequest} — an {@code indexes} list instead of a
+     *  single {@code index}, plus the shared sort / mergePolicies /
+     *  merger controls. */
     public record MultiSearchRequest(
             List<String> indexes, String q,
             java.util.Map<String, List<String>> filters,
             List<String> facets,
             String sort, Integer page, Integer size,
             String mode, String lang,
-            String merger
+            String merger,
+            /** Composite sort chain — same as SearchRequest.sortChain. */
+            List<SearchRequest.SortSpec> sortChain,
+            /** Per-aggregate policy overrides — same as SearchRequest.mergePolicies. */
+            java.util.Map<String, String> mergePolicies
     ) { }
 }
