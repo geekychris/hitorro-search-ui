@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.png" alt="Hitorro Search Ui logo" width="180">
+</p>
+
 # hitorro-search-ui
 
 Extensible search UI for the hitorro platform. Ships **three artifacts**:
