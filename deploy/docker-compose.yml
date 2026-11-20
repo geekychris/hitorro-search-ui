@@ -15,7 +15,7 @@ services:
     # If you want a fully self-contained image, wrap fleet-retrieval in its own
     # Dockerfile — for the demo we mount the jar directly to keep things small.
     volumes:
-      - ${HOME}/hitorro/hitorro-fleet-retrieval/target/hitorro-fleet-retrieval-3.0.1.jar:/app/fleet-retrieval.jar:ro
+      - ${HOME}/hitorro/hitorro-fleet-retrieval/target/hitorro-fleet-retrieval-3.0.2.jar:/app/fleet-retrieval.jar:ro
       - ${HOME}/.hitorro/pipelines:/data/pipelines:ro
     command:
       - java

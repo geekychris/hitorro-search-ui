@@ -8,7 +8,7 @@ The BFF picks up its upstream from `hitorro.searchui.fleet.base-url` (env: `SEAR
 
 ```bash
 # Point at a remote coordinator
-java -jar backend/target/hitorro-search-ui-3.0.1.jar \
+java -jar backend/target/hitorro-search-ui-3.0.2.jar \
     --hitorro.searchui.fleet.base-url=https://retrieval.your-cluster.example
 ```
 
@@ -159,13 +159,13 @@ Not shipped in v1. When you add it:
 
 ```bash
 # Terminal 1 — fleet-retrieval (needs pipelines already written)
-java -jar ~/hitorro/hitorro-fleet-retrieval/target/hitorro-fleet-retrieval-3.0.1.jar \
+java -jar ~/hitorro/hitorro-fleet-retrieval/target/hitorro-fleet-retrieval-3.0.2.jar \
     --server.port=8095 \
     --hitorro.fleet.retrieval.mode=shared \
     --hitorro.fleet.retrieval.pipelines-home=$HOME/.hitorro/pipelines
 
 # Terminal 2 — search-ui
-java -jar ~/hitorro/hitorro-search-ui/backend/target/hitorro-search-ui-3.0.1.jar
+java -jar ~/hitorro/hitorro-search-ui/backend/target/hitorro-search-ui-3.0.2.jar
 ```
 
 ## Reading which index is which
