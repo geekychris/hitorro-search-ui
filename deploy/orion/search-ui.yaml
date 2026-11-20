@@ -16,7 +16,7 @@ metadata:
     family: hitorro-fleet
 spec:
   capability: hitorro-search-ui
-  version: 3.0.1
+  version: 3.0.2
 
   # Runtime — Java 21 fat JAR. Orion places the jar on any node in
   # the pool tagged for the family; the ${PIPELINES_HOME} substitution
@@ -24,7 +24,7 @@ spec:
   runtime:
     kind: java
     javaVersion: 21
-    jar: hitorro-search-ui-3.0.1.jar
+    jar: hitorro-search-ui-3.0.2.jar
     args:
       - --hitorro.searchui.fleet.base-url=${FLEET_RETRIEVAL_URL:http://fleet-retrieval:8095}
       - --hitorro.searchui.pipelines-home=${PIPELINES_HOME:/data/pipelines}

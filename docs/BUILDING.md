@@ -21,7 +21,7 @@ What happens:
 2. `pnpm install` on the workspace root — installs deps for the core library + demo-app
 3. `pnpm -r build` — TypeScript check + Vite build for both packages
 4. `maven-resources-plugin` copies `frontend/packages/demo-app/dist/` into `backend/src/main/resources/static/`
-5. `spring-boot-maven-plugin` repackages into a fat jar at `backend/target/hitorro-search-ui-3.0.1.jar`
+5. `spring-boot-maven-plugin` repackages into a fat jar at `backend/target/hitorro-search-ui-3.0.2.jar`
 6. Unit tests run (JvsQueryShaperTest, 11 tests)
 7. Jar installed into your local `~/.m2/repository/`
 
@@ -46,7 +46,7 @@ Now open `http://localhost:5173` — HMR is instant. `/api/*` is proxied to the 
 ## Running the packaged jar
 
 ```bash
-java -jar backend/target/hitorro-search-ui-3.0.1.jar \
+java -jar backend/target/hitorro-search-ui-3.0.2.jar \
     --server.port=8100 \
     --hitorro.searchui.fleet.base-url=http://localhost:8095
 ```

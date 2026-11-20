@@ -35,7 +35,7 @@ FROM eclipse-temurin:21-jre
 # Non-root uid 1000 — matches the mesh driver's pattern for volume-mount
 # permission consistency across the family.
 RUN groupadd --gid 1000 hitorro && useradd --uid 1000 --gid hitorro --home /home/hitorro --create-home --shell /usr/sbin/nologin hitorro
-COPY --from=backend --chown=hitorro:hitorro /build/backend/target/hitorro-search-ui-3.0.1.jar /app/search-ui.jar
+COPY --from=backend --chown=hitorro:hitorro /build/backend/target/hitorro-search-ui-3.0.2.jar /app/search-ui.jar
 USER hitorro
 WORKDIR /home/hitorro
 
