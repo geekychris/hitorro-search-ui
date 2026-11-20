@@ -8,6 +8,17 @@ server:
 spring:
   application:
     name: hitorro-search-ui
+  # Boot 4: HTTP JSON stays on Jackson 2 (com.fasterxml.jackson) — the
+  # fleet-retrieval payloads and SearchResponse are Jackson 2 JsonNodes.
+  http:
+    converters:
+      preferred-json-mapper: jackson2   # Spring MVC responses
+    codecs:
+      preferred-json-mapper: jackson2   # WebClient to fleet-retrieval
+  # Jackson 2 settings bind under spring.jackson2.* in Boot 4; spring.jackson.*
+  # now configures the (unused for HTTP) Jackson 3 mapper. Keep both aligned.
+  jackson2:
+    default-property-inclusion: non_null
   jackson:
     default-property-inclusion: non_null
   # Static resources ship inside the fat jar under /static/ (populated

@@ -8,7 +8,7 @@ Extensible search UI for the hitorro platform. Ships **three artifacts**:
 
 - **`@hitorro/search-ui-core`** — publishable React 18 component library. Drop `<AppShell />` into any React app.
 - **`demo-app`** — reference SPA that mounts the library and registers a per-type override (`MailEmailCard`) as a worked example.
-- **`hitorro-search-ui` backend** — Spring Boot 3.2 BFF on `:8100` that proxies `hitorro-fleet-retrieval` and shapes a UI-friendly REST surface (`/api/search`, `/api/indexes`, `/api/docs/*`).
+- **`hitorro-search-ui` backend** — Spring Boot 4 BFF on `:8100` that proxies `hitorro-fleet-retrieval` and shapes a UI-friendly REST surface (`/api/search`, `/api/indexes`, `/api/docs/*`).
 
 **Two experiences in one shell:**
 
@@ -48,7 +48,7 @@ Opt out of search-ui: `MESH_SEARCH_UI=0 ./mesh-up.sh`.
 ## Layout
 
 ```
-backend/     Spring Boot BFF (Java 21, Spring Boot 3.2)
+backend/     Spring Boot BFF (Java 21, Spring Boot 4)
 frontend/    npm workspace — core library + demo-app (Vite + React 18 + TS + Tailwind + TanStack Query)
 deploy/      Dockerfile, docker-compose, Helm chart, Orion manifest
 docs/        this documentation set

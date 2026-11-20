@@ -148,7 +148,7 @@ useSearchStore.setState({ index: 'my-default-index' })
 
 ## Add a new BFF endpoint
 
-`hitorro-search-ui` backend is a plain Spring Boot 3 app. Add a controller:
+`hitorro-search-ui` backend is a plain Spring Boot 4 app. Add a controller:
 
 ```java
 // backend/src/main/java/com/hitorro/searchui/api/SavedSearchController.java

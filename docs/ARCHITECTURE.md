@@ -21,7 +21,7 @@
                                     │  HTTP (JSON)
                                     ▼
 ┌──────────────────────────────────────────────────────────────────────────┐
-│  hitorro-search-ui backend  (Spring Boot 3.2, Java 21, :8100)            │
+│  hitorro-search-ui backend  (Spring Boot 4, Java 21, :8100)              │
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────────┐  │
 │  │ /api/search     │→ │  JvsQueryShaper │→ │  FleetRetrievalClient   │  │
 │  │ /api/indexes    │  │  (UI DTO ↔ JVS) │  │  (WebClient, Netty pool)│  │

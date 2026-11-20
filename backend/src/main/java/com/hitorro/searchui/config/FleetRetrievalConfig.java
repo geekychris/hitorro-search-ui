@@ -31,8 +31,13 @@ public class FleetRetrievalConfig {
     // FleetRetrievalClient wants the auto-registered bean name
     // `fleetRetrievalClient`, and naming this WebClient factory the same
     // triggers a BeanDefinitionOverrideException at startup.
+    // Built from Boot's WebClient.Builder so the auto-configured codecs apply:
+    // with spring.http.codecs.preferred-json-mapper=jackson2 that is the Jackson 2
+    // decoder, which FleetRetrievalClient needs for bodyToMono(JsonNode.class)
+    // (Spring Framework 7's bare WebClient.builder() would pick Jackson 3).
     @Bean
     public WebClient fleetWebClient(
+            WebClient.Builder builder,
             @Value("${hitorro.searchui.fleet.base-url:http://localhost:8095}") String baseUrl,
             @Value("${hitorro.searchui.fleet.timeout-ms:15000}") int timeoutMs) {
 
@@ -42,7 +47,7 @@ public class FleetRetrievalConfig {
                 .doOnConnected(c -> c.addHandlerLast(
                         new ReadTimeoutHandler(timeoutMs, TimeUnit.MILLISECONDS)));
 
-        return WebClient.builder()
+        return builder
                 .baseUrl(baseUrl.replaceAll("/+$", ""))
                 .clientConnector(new ReactorClientHttpConnector(http))
                 // 2 MiB — some hit payloads (full enriched JVS with segmented_ner
