@@ -3,10 +3,11 @@
  */
 package com.hitorro.searchui.api;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import com.hitorro.searchui.json.Json;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import com.hitorro.searchui.client.FleetRetrievalClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +23,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import com.hitorro.searchui.json.JsonValues;
 
 /**
  * Index discovery + schema. Two endpoints:
@@ -40,7 +42,7 @@ import java.util.Map;
 @RequestMapping("/api")
 public class IndexController {
 
-    private static final ObjectMapper JSON = new ObjectMapper();
+    private static final ObjectMapper JSON = Json.MAPPER;
 
     private final FleetRetrievalClient fleet;
     private final Path pipelinesHome;
@@ -58,10 +60,10 @@ public class IndexController {
         JsonNode upstream = fleet.indexes();
         for (JsonNode i : upstream) {
             ObjectNode row = out.addObject();
-            String name = i.path("name").asText();
+            String name = JsonValues.asText(i.path("name"));
             row.put("name", name);
-            row.put("docCount",       i.path("docCount").asLong(-1));
-            row.put("lastModifiedMs", i.path("lastModifiedMs").asLong(0));
+            row.put("docCount",       JsonValues.asLong(i.path("docCount"), -1));
+            row.put("lastModifiedMs", JsonValues.asLong(i.path("lastModifiedMs"), 0));
             row.put("hasSidecar",     Files.exists(sidecarPath(name)));
         }
         return out;
@@ -149,8 +151,8 @@ public class IndexController {
         JsonNode fields = type.get("fields");
         if (fields != null && fields.isArray()) {
             for (JsonNode f : fields) {
-                String fname = f.path("name").asText();
-                String ftype = f.path("type").asText();
+                String fname = JsonValues.asText(f.path("name"));
+                String ftype = JsonValues.asText(f.path("type"));
                 classifyField(fname, ftype, f, buckets);
             }
         }
@@ -186,8 +188,8 @@ public class IndexController {
         JsonNode groups = fieldDef.get("groups");
         if (groups != null && groups.isArray()) {
             for (JsonNode g : groups) {
-                if (!"index".equals(g.path("name").asText())) continue;
-                String method = g.path("method").asText();
+                if (!"index".equals(JsonValues.asText(g.path("name")))) continue;
+                String method = JsonValues.asText(g.path("method"));
                 if ("identifier".equals(method)) {
                     addUnique(b.get("identifier"), name);
                     addUnique(b.get("facetable"), name);
@@ -208,8 +210,8 @@ public class IndexController {
     private static void classifyLuceneFields(JsonNode fleetFields, Map<String, List<String>> b) {
         if (fleetFields == null || !fleetFields.has("fields")) return;
         for (JsonNode fi : fleetFields.get("fields")) {
-            String phys = fi.path("name").asText();
-            String dv   = fi.path("docValuesType").asText("NONE");
+            String phys = JsonValues.asText(fi.path("name"));
+            String dv   = JsonValues.asText(fi.path("docValuesType"), "NONE");
             SuffixParse sp = parseSuffix(phys);
             if (sp == null) continue;                    // no recognised suffix
             String logical = sp.logical;

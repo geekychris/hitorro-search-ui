@@ -3,16 +3,18 @@
  */
 package com.hitorro.searchui.shape;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import com.hitorro.searchui.json.Json;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import com.hitorro.searchui.json.JsonValues;
 
 /**
  * Bidirectional translator between the UI's {@link SearchRequest} +
@@ -27,7 +29,7 @@ import java.util.Map;
 @Component
 public class JvsQueryShaper {
 
-    private static final ObjectMapper JSON = new ObjectMapper();
+    private static final ObjectMapper JSON = Json.MAPPER;
 
     /**
      * Default text fields wrapped around a bare end-user query. The
@@ -232,9 +234,9 @@ public class JvsQueryShaper {
 
     /** Unwrap the fleet-retrieval response into the UI's flat shape. */
     public SearchResponse fromExecuteResponse(SearchRequest req, JsonNode coordResp, long tookMs) {
-        long total = coordResp.path("totalHits").asLong(0);
+        long total = JsonValues.asLong(coordResp.path("totalHits"), 0);
         List<String> stages = new ArrayList<>();
-        for (JsonNode s : coordResp.withArray("stagesUsed")) stages.add(s.asText());
+        for (JsonNode s : coordResp.withArray("stagesUsed")) stages.add(JsonValues.asText(s));
 
         // Documents may live under "documents" (execute) or "hits" (some
         // older paths). Both are arrays of JVS docs.
@@ -249,7 +251,7 @@ public class JvsQueryShaper {
         if (docsNode != null && docsNode.isArray()) {
             for (JsonNode d : docsNode) {
                 String id = extractId(d);
-                String htType = d.path("ht_type").asText(null);
+                String htType = JsonValues.asText(d.path("ht_type"), null);
                 String snip = snippetsById.get(id);
                 if (snip == null) snip = localSnippet(d, req);
                 hits.add(new SearchResponse.Hit(id, htType, snip, d));
@@ -303,15 +305,15 @@ public class JvsQueryShaper {
     private static String extractId(JsonNode doc) {
         JsonNode idNode = doc.get("id");
         if (idNode == null || idNode.isNull()) return null;
-        if (idNode.isValueNode()) return idNode.asText();
+        if (idNode.isValueNode()) return JsonValues.asText(idNode);
         if (idNode.isObject()) {
             for (String key : ID_INNER_KEYS) {
                 JsonNode v = idNode.get(key);
-                if (v != null && !v.isNull() && v.isValueNode()) return v.asText();
+                if (v != null && !v.isNull() && v.isValueNode()) return JsonValues.asText(v);
             }
             return idNode.toString();
         }
-        return idNode.asText();
+        return JsonValues.asText(idNode);
     }
 
     /** Inner keys we probe when the top-level {@code id} is an object.
@@ -328,10 +330,10 @@ public class JvsQueryShaper {
         JsonNode aggs = coordResp.get("aggregates");
         if (aggs == null || !aggs.isArray()) return out;
         for (JsonNode a : aggs) {
-            if (!"summarize".equals(a.path("_aggregate").asText())) continue;
+            if (!"summarize".equals(JsonValues.asText(a.path("_aggregate")))) continue;
             JsonNode byId = a.get("byId");
             if (byId != null && byId.isObject()) {
-                byId.fields().forEachRemaining(e -> out.put(e.getKey(), e.getValue().asText()));
+                byId.properties().iterator().forEachRemaining(e -> out.put(e.getKey(), JsonValues.asText(e.getValue())));
             }
         }
         return out;
@@ -350,16 +352,16 @@ public class JvsQueryShaper {
         for (JsonNode a : aggs) {
             // Facets aggregate has one key per dimension plus "_aggregate".
             // Any object entry that isn't "_aggregate" is a dimension.
-            a.fields().forEachRemaining(e -> {
+            a.properties().iterator().forEachRemaining(e -> {
                 if ("_aggregate".equals(e.getKey())) return;
                 JsonNode dim = e.getValue();
                 if (!dim.isObject() || !dim.has("values")) return;
-                long total = dim.path("totalCount").asLong(0);
+                long total = JsonValues.asLong(dim.path("totalCount"), 0);
                 List<SearchResponse.FacetValue> values = new ArrayList<>();
                 for (JsonNode v : dim.withArray("values")) {
                     values.add(new SearchResponse.FacetValue(
-                            v.path("value").asText(""),
-                            v.path("count").asLong(0)));
+                            JsonValues.asText(v.path("value"), ""),
+                            JsonValues.asLong(v.path("count"), 0)));
                 }
                 out.put(e.getKey(), new SearchResponse.Facet(e.getKey(), total, values));
             });
@@ -395,7 +397,7 @@ public class JvsQueryShaper {
         JsonNode body = doc.at("/body/mls/0/clean");
         if (body.isMissingNode() || body.isNull()) body = doc.at("/body/mls/0/text");
         if (body.isMissingNode() || body.isNull()) return null;
-        String text = body.asText();
+        String text = JsonValues.asText(body);
         int idx = text.toLowerCase().indexOf(firstTerm);
         if (idx < 0) return null;
 

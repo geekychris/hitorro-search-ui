@@ -3,8 +3,9 @@
  */
 package com.hitorro.searchui.error;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.ObjectMapper;
+import com.hitorro.searchui.json.Json;
+import tools.jackson.databind.node.ObjectNode;
 import com.hitorro.searchui.client.FleetRetrievalClient.FleetException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +24,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class SearchExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(SearchExceptionHandler.class);
-    private static final ObjectMapper JSON = new ObjectMapper();
+    private static final ObjectMapper JSON = Json.MAPPER;
 
     @ExceptionHandler(FleetException.class)
     public ResponseEntity<ObjectNode> fleet(FleetException e) {
