@@ -3,9 +3,10 @@
  */
 package com.hitorro.searchui.shape;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import com.hitorro.searchui.json.Json;
+import tools.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -197,7 +198,7 @@ class JvsQueryShaperTest {
     @Nested
     @DisplayName("response translation")
     class Response {
-        private final ObjectMapper JSON = new ObjectMapper();
+        private final ObjectMapper JSON = Json.MAPPER;
 
         @Test
         void unwrapsFacetsFromAggregatesArray() throws Exception {

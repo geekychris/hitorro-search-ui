@@ -3,9 +3,10 @@
  */
 package com.hitorro.searchui;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import com.hitorro.searchui.json.Json;
+import tools.jackson.databind.node.ObjectNode;
 import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
@@ -14,7 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -38,19 +39,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Starts the whole BFF against a stub fleet-retrieval (a JDK HttpServer on a
  * random loopback port), so it runs offline.
  *
- * <p>Boot 4 defaults HTTP JSON to Jackson 3 (tools.jackson). This app keeps
- * Jackson 2 both ways: WebClient decodes fleet-retrieval bodies into a
- * com.fasterxml {@link JsonNode} (spring.http.codecs.preferred-json-mapper),
- * and Spring MVC writes JsonNode responses (spring.http.converters.preferred-json-mapper).
- * A Jackson 3 writer would render a JsonNode as a bean
- * ({"array":false,"nodeType":"OBJECT",...}); a Jackson 3 decoder cannot build
- * one at all. These tests pin the bodies.</p>
+ * <p>Spring MVC and the WebClient both use Boot 4's Jackson 3 (tools.jackson) mapper, configured for
+ * the Jackson 2 format (see {@code config.JsonConfig}): WebClient decodes fleet-retrieval bodies into a
+ * {@link JsonNode} and Spring MVC writes JsonNode responses as plain JSON. Before 4.0.0 both ran on
+ * Jackson 2 through spring-boot-jackson2. These tests pin the bodies.</p>
  */
 @SpringBootTest
 @AutoConfigureMockMvc
 class SearchUiApplicationTest {
 
-    static final ObjectMapper JSON = new ObjectMapper();
+    static final ObjectMapper JSON = Json.MAPPER;
 
     static final String DOC =
             "{\"id\":\"k1\",\"ht_type\":\"mail\",\"title\":\"Hello\",\"n\":3,\"tags\":[\"a\",\"b\"],\"meta\":{\"ok\":true}}";
@@ -108,11 +106,11 @@ class SearchUiApplicationTest {
     }
 
     @Test
-    void jackson2ConverterIsTheJsonWriter() {
+    void jacksonConverterIsTheJsonWriter() {
         HttpMessageConverter<?> firstJson = adapter.getMessageConverters().stream()
                 .filter(c -> c.canWrite(ObjectNode.class, MediaType.APPLICATION_JSON))
                 .findFirst().orElseThrow();
-        assertThat(firstJson).isInstanceOf(MappingJackson2HttpMessageConverter.class);
+        assertThat(firstJson).isInstanceOf(JacksonJsonHttpMessageConverter.class);
     }
 
     /** DocController returns the JsonNode WebClient decoded — must round-trip unchanged. */
@@ -138,7 +136,7 @@ class SearchUiApplicationTest {
                 .andExpect(jsonPath("$.hits[0].htType").value("mail"))
                 .andReturn().getResponse().getContentAsString();
 
-        // spring.jackson2.default-property-inclusion=non_null: the null `aggregates`
+        // spring.jackson.default-property-inclusion=non_null: the null `aggregates`
         // is left out, not written as "aggregates":null.
         assertThat(JSON.readTree(body).has("aggregates")).isFalse();
 

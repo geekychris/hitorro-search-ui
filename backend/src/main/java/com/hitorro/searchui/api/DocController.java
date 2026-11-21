@@ -3,7 +3,7 @@
  */
 package com.hitorro.searchui.api;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.hitorro.searchui.client.FleetRetrievalClient;
 import com.hitorro.searchui.client.FleetRetrievalClient.FleetException;
 import org.springframework.web.bind.annotation.GetMapping;

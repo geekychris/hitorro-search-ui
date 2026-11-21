@@ -3,8 +3,9 @@
  */
 package com.hitorro.searchui.api;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import com.hitorro.searchui.json.Json;
 import com.hitorro.searchui.client.FleetRetrievalClient;
 import com.hitorro.searchui.shape.JvsQueryShaper;
 import com.hitorro.searchui.shape.SearchRequest;
@@ -25,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import com.hitorro.searchui.json.JsonValues;
 
 /**
  * Streaming export of a search result set as JSON array, NDJSON stream,
@@ -48,7 +50,7 @@ import java.util.Set;
 @RequestMapping("/api")
 public class ExportController {
 
-    private static final ObjectMapper JSON = new ObjectMapper();
+    private static final ObjectMapper JSON = Json.MAPPER;
     /** One page of results per fleet-retrieval call. 100 is a sweet
      *  spot — bigger pages amortise the coordinator round-trip; smaller
      *  ones start streaming sooner. */
@@ -181,7 +183,7 @@ public class ExportController {
             java.util.LinkedHashSet<String> keys = new java.util.LinkedHashSet<>();
             for (JsonNode d : docs) {
                 if (!d.isObject()) continue;
-                Iterator<String> it = d.fieldNames();
+                Iterator<String> it = d.propertyNames().iterator();
                 while (it.hasNext()) keys.add(it.next());
             }
             return new ArrayList<>(keys);
@@ -200,7 +202,7 @@ public class ExportController {
                 if (i > 0) w.write(',');
                 JsonNode v = doc.get(cols.get(i));
                 if (v == null || v.isNull()) continue;
-                w.write(csvEscape(v.isValueNode() ? v.asText() : v.toString()));
+                w.write(csvEscape(v.isValueNode() ? JsonValues.asText(v) : v.toString()));
             }
             w.write('\n');
         }

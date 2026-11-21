@@ -3,10 +3,11 @@
  */
 package com.hitorro.searchui.api;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import com.hitorro.searchui.json.Json;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import com.hitorro.searchui.client.FleetRetrievalClient;
 import com.hitorro.searchui.shape.JvsQueryShaper;
 import com.hitorro.searchui.shape.SearchRequest;
@@ -39,7 +40,7 @@ import java.util.List;
 @RequestMapping("/api")
 public class SearchController {
 
-    private static final ObjectMapper JSON = new ObjectMapper();
+    private static final ObjectMapper JSON = Json.MAPPER;
 
     private final FleetRetrievalClient fleet;
     private final JvsQueryShaper shaper;
