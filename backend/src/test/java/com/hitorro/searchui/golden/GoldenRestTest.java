@@ -170,6 +170,7 @@ class GoldenRestTest {
         g = new GoldenRecorder(GOLDEN)
                 .volatileKeys("tookMs|timestamp")
                 .replace(pipelines.toString(), "<PIPELINES>")
+                .normalizer(s -> s.replaceAll("(\"statistic\":\"[A-Z_]+\",\"value\":)[0-9.Ee+-]+", "$10"))
                 .replace("127.0.0.1:" + fleet.getAddress().getPort(), "<FLEET>")
                 // Accepted differences: the generic 500 handler returns the exception's own message, and these
                 // two come from Jackson. Status and shape must still match; only the message text is masked.
@@ -217,6 +218,9 @@ class GoldenRestTest {
 
         step("actuator health", get("/actuator/health"));
         step("actuator info", get("/actuator/info"));
+        g.restUnordered(mvc, "actuator links", get("/actuator")); // link order follows endpoint discovery
+        step("actuator health liveness", get("/actuator/health/liveness"));
+        step("actuator metric jvm.threads.daemon value", get("/actuator/metrics/jvm.threads.daemon"));
         step("spa route", get("/search"));
 
         ConverterProbe.run(ConverterProbe.jsonConverter(adapter), g);

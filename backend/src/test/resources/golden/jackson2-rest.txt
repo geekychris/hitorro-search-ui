@@ -200,6 +200,21 @@ status: 200
 content-type: application/vnd.spring-boot.actuator.v3+json
 {}
 
+### actuator links
+status: 200
+content-type: application/vnd.spring-boot.actuator.v3+json
+{"_links":{"self":{"href":"http://localhost/actuator","templated":false},"info":{"href":"http://localhost/actuator/info","templated":false},"health-path":{"href":"http://localhost/actuator/health/{*path}","templated":true},"health":{"href":"http://localhost/actuator/health","templated":false},"metrics":{"href":"http://localhost/actuator/metrics","templated":false},"metrics-requiredMetricName":{"href":"http://localhost/actuator/metrics/{requiredMetricName}","templated":true}}}
+
+### actuator health liveness
+status: 200
+content-type: application/vnd.spring-boot.actuator.v3+json
+{"status":"UP"}
+
+### actuator metric jvm.threads.daemon value
+status: 200
+content-type: application/vnd.spring-boot.actuator.v3+json
+{"name":"jvm.threads.daemon","description":"The current number of live daemon threads","baseUnit":"threads","measurements":[{"statistic":"VALUE","value":0}],"availableTags":[]}
+
 ### spa route
 status: 200
 content-type: 
